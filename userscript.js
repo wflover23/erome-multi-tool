@@ -18,7 +18,7 @@ function mainFunction() {
     const userRow = document.querySelector('.username');
     const cleanseBtn = document.createElement('button');
     cleanseBtn.classList.add('btn', 'btn-grey', 'btn-sm', 'sidebyside-btn');
-    cleanseBtn.textContent = 'SIDE-BY-SIDE';
+    cleanseBtn.textContent = 'SBS';
     userRow.appendChild(cleanseBtn);
     if (document.querySelectorAll('.video').length>0)
     {
