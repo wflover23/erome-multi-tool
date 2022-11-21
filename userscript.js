@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      0.8.67
 // @description  clone videos in an erome album, play multiple & side-by-side!
-// @author       inert488
+// @author       throwinglove23
 // @license      MIT
 // @match        https://www.erome.com/a/*
 // @match        http://www.erome.com/a/*
