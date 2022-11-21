@@ -64,6 +64,7 @@ function addTransitionToID()
         {
             const idText = link.textContent.trim();
             const parsedInt = parseInt(idText.substring(1), 10);
+            const idEl = document.getElementById(parsedInt);
             if (!Number.isNaN(parsedInt))
             {
                 link.href=`#${parsedInt}`;
