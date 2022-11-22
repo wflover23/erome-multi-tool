@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Erome Video Cloner
 // @namespace    http://tampermonkey.net/
-// @version      0.8.67
+// @version      0.8.72
 // @description  clone videos in an erome album, play multiple & side-by-side!
 // @author       throwinglove23
 // @license      MIT
@@ -155,7 +155,17 @@ function replaceAdWithButtons()
     
     ad.append(sbsBtn, clonerBtn);
 }
- 
+
+function allowPToPause(videoToAllow)
+{
+    videoToAllow.parentElement.onkeypress = function(event){
+        if(event.key == 'p')
+        {
+            videoToAllow.parentElement.querySelector('.vjs-play-control').click();
+        }
+    };
+}
+
 function playerVersion(data)
 {
         const mediaDiv = document.createElement('div');
@@ -184,6 +194,8 @@ function playerVersion(data)
         mediaDiv.querySelector('.vjs-control-bar').insertAdjacentElement("afterbegin", btn);
         mediaDiv.querySelector('.vjs-play-control').insertAdjacentElement("afterend", btn2);
         mediaDiv.querySelector('.vjs-fullscreen-control').insertAdjacentElement("beforebegin", flipper);
+
+        allowPToPause(video);
 }
  
 function getVidData(vidDiv)
