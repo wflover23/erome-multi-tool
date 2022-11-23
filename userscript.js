@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Erome Video Cloner
 // @namespace    http://tampermonkey.net/
-// @version      0.8.75
+// @version      0.8.84
 // @description  clone videos in an erome album, play multiple & side-by-side!
-// @author       throwinglove23
+// @author       inert488
 // @license      MIT
 // @match        https://www.erome.com/a/*
 // @match        http://www.erome.com/a/*
@@ -12,14 +12,16 @@
 // @icon         https://www.erome.com/favicon-32x32.png
 // @grant        none
 // ==/UserScript==
- 
+/* jshint esversion: 8 */ 
+
 function mainFunction() {
     'use strict';
     const userRow = document.querySelector('.username');
     const cleanseBtn = document.createElement('button');
-    cleanseBtn.classList.add('btn', 'btn-grey', 'btn-sm', 'sidebyside-btn');
-    cleanseBtn.textContent = 'SBS';
+    cleanseBtn.classList.add('btn', 'btn-grey', 'btn-sm', 'url-btn');
+    cleanseBtn.textContent = 'SHOW URLS';
     userRow.appendChild(cleanseBtn);
+    cleanseBtn.addEventListener('click', urlShow);
     if (document.querySelectorAll('.video').length>0)
     {
         const infoRow = document.querySelector('.user-info.text-right');
@@ -39,13 +41,41 @@ function mainFunction() {
         //spanItem.addEventListener('click', cloneFunction);
     }
     // adding transitions to legend links if exists
-    
-    cleanseBtn.addEventListener('click', sideBySide);
     replaceAdWithButtons();
- 
+
     // Your code here...
 }
- 
+
+function urlShow()
+{
+    const urlBtn = document.querySelector('.url-btn');
+    urlBtn.textContent == 'SHOW URLS' ? urlBtn.textContent = 'HIDE URLS': urlBtn.textContent = 'SHOW URLS';
+    const vids = document.querySelectorAll('.video');
+                                vids.forEach(vid =>
+                                    {
+                                        const src = vid.querySelector('video').firstElementChild.src;
+                                        if (vid.firstChild.tagName != 'A')
+                                        {
+                                            const anc = document.createElement('a');
+                                            anc.classList.add('video-url', 'hidden');
+                                            anc.textContent = 'COPY LINK';
+                                            vid.insertAdjacentElement("afterbegin", anc);
+                                            anc.onclick = async function()
+                                                {
+                                                    await navigator.clipboard.writeText(src);
+                                                };
+                                        }
+                                    });
+
+
+                                    const links = document.querySelectorAll('.video-url');
+                                            links.forEach(anc =>
+                                                {
+                                                    anc.classList.toggle('hidden')
+                                                });
+}
+
+
 function addTransitionToID()
 {
     const legendLinks = document.querySelectorAll('#legend a');
@@ -78,7 +108,7 @@ function addTransitionToID()
             setTimeout(backTo, 400, idEl);
         });
 }
- 
+
 function addProperID()
 {
     let count = 0;
@@ -91,7 +121,7 @@ function addProperID()
         }
     );
 }
- 
+
 function playerSeekables()
 {
     var btn = document.createElement('button');
@@ -120,11 +150,11 @@ function playerSeekables()
     flipBtn.append(flipIcon);
     flipBtn.classList.add('mirror-btn');
     flipBtn.onclick = flip;
- 
+
     return {btn, btn2, flipBtn};
    
 }
- 
+
 function flip()
         {
             let flipper = this.closest('.mirror-btn');
@@ -137,7 +167,7 @@ function flip()
             this.closest('.video').querySelector('video').style.transform = 'rotateY(170deg)';
             flipper.classList.add('flipped');
         }
- 
+
 function replaceAdWithButtons()
 {
     const ad = document.getElementById('bubble');
@@ -177,7 +207,7 @@ function playerVersion(data)
         const videoDiv = document.createElement('div');
         mediaDiv.classList.add('media-group');
         videoDiv.classList.add('video');
- 
+
         const mainMedia = document.querySelector('.media-group');
         mainMedia.parentElement.appendChild(mediaDiv);
         mediaDiv.appendChild(videoDiv);
@@ -199,10 +229,10 @@ function playerVersion(data)
         mediaDiv.querySelector('.vjs-control-bar').insertAdjacentElement("afterbegin", btn);
         mediaDiv.querySelector('.vjs-play-control').insertAdjacentElement("afterend", btn2);
         mediaDiv.querySelector('.vjs-fullscreen-control').insertAdjacentElement("beforebegin", flipper);
-
+        
         allowPToPause(video);
 }
- 
+
 function getVidData(vidDiv)
 {
     const urL = vidDiv.querySelector('.video video source').src;
@@ -218,7 +248,7 @@ function removeWithData(vidDiv)
     vidDiv.remove();
     return data;
 }
- 
+
 function videoCleanseReplace()
 {
     const vidDivs = document.getElementsByClassName('video');
@@ -239,7 +269,7 @@ function videoCleanseReplace()
     
     
 }
- 
+
 function sideBySide()
 {
     if (document.querySelectorAll('.media-group.col-sm-6').length > 0)
@@ -267,7 +297,7 @@ function sideBySide()
         
     }
 }
- 
+
 function showMessage()
 {
     const messageDiv = document.querySelector('#user_message');
@@ -279,7 +309,7 @@ function showMessage()
         messageDiv.style.width="200px";
     }, 1500);
 }
- 
+
 // adding clone button to each video
 function cloneFunction()
 {
@@ -327,7 +357,7 @@ function cloneFunction()
     });
     document.querySelector('a .cloner').textContent = 'CLONER: ON';
 }
- 
+
 function cloneThis()
 {
     
@@ -351,10 +381,10 @@ function cloneThis()
             mediaDiv.classList.add('col-sm-6');
         }
         videoDiv.classList.add('video');
- 
+
         const currentMedia = this.parentElement.parentElement;
         currentMedia.insertAdjacentElement("afterend", mediaDiv)
- 
+
         mediaDiv.appendChild(videoDiv);
         const video = document.createElement('video');
         video.classList.add('video-js', 'vjs-16-9');
@@ -365,13 +395,13 @@ function cloneThis()
         src.setAttribute('src', data.urL);
         video.appendChild(src);
         videoDiv.appendChild(video);
-        videojs(video);
+        var player = videojs(video);
         // var player = videojs(duplicateVid);
         
         console.log("found videos");
     }
 }
- 
+
 function cleanOnLoad()
 {
     mainFunction();
