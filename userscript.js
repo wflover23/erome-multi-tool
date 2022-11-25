@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Erome Video Cloner
 // @namespace    http://tampermonkey.net/
-// @version      0.8.84
+// @version      0.9.419
 // @description  clone videos in an erome album, play multiple & side-by-side!
-// @author       inert488
+// @author       throwinglove23
 // @license      MIT
 // @match        https://www.erome.com/a/*
 // @match        http://www.erome.com/a/*
+// @match        https://www.erome.com/*
 // @exclude      http://www.erome.com/a/*/edit
 // @exclude      https://www.erome.com/a/*/edit
 // @icon         https://www.erome.com/favicon-32x32.png
@@ -16,8 +17,21 @@
 
 function mainFunction() {
     'use strict';
+    // removing default seek functions
+    document.onkeydown = null;
+    window.addEventListener('keydown', function(e) {
+        // avoiding space which scrolls down to allow pausing
+      if(e.keyCode == 32) {
+          
+        e.preventDefault();
+      }
+});
     const userRow = document.querySelector('.username');
     const cleanseBtn = document.createElement('button');
+    if (userRow == null || document.querySelector('video') == null)
+    {
+        return;
+    }
     cleanseBtn.classList.add('btn', 'btn-grey', 'btn-sm', 'url-btn');
     cleanseBtn.textContent = 'SHOW URLS';
     userRow.appendChild(cleanseBtn);
@@ -46,33 +60,134 @@ function mainFunction() {
     // Your code here...
 }
 
+function copySourceFromAlbum()
+{
+    const albums = Array.from(document.getElementsByClassName('album'));
+    albums.forEach(async function(album)
+        {
+            const hr = album.querySelector('.album-link').href;
+            const hdr = await fetch(hr);
+            const data = await hdr.text();
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(data, 'text/html');
+            album.querySelector('.album-thumbnail').style.objectFit = 'cover';
+            album.style.maxHeight = '200px';
+            if (doc.querySelector('source') == null)
+            {
+                return;
+            }
+            const vidSrc = doc.querySelector('source').src;
+            async function copyFxn()
+            {
+                await navigator.clipboard.writeText(vidSrc);
+            }
+            album.insertAdjacentHTML("afterbegin", '<button class="copy-link-btn btn btn-sm btn-pink" style="margin-left: 2px;width: fit-content;position: relative;z-index: 30;bottom: 61px;font-size: 1.5rem;padding: 0;">COPY</button>');
+            album.querySelector('.copy-link-btn').onclick = copyFxn;
+        });
+}
+
 function urlShow()
 {
+    if (document.querySelector('video') == null)
+    {
+        return;
+    }
     const urlBtn = document.querySelector('.url-btn');
     urlBtn.textContent == 'SHOW URLS' ? urlBtn.textContent = 'HIDE URLS': urlBtn.textContent = 'SHOW URLS';
     const vids = document.querySelectorAll('.video');
-                                vids.forEach(vid =>
-                                    {
-                                        const src = vid.querySelector('video').firstElementChild.src;
-                                        if (vid.firstChild.tagName != 'A')
-                                        {
-                                            const anc = document.createElement('a');
-                                            anc.classList.add('video-url', 'hidden');
-                                            anc.textContent = 'COPY LINK';
-                                            vid.insertAdjacentElement("afterbegin", anc);
-                                            anc.onclick = async function()
-                                                {
-                                                    await navigator.clipboard.writeText(src);
-                                                };
-                                        }
-                                    });
+    if (document.querySelector('.form-url') == null)
+    {
+        const area = document.querySelector('.clearfix');
+        area.insertAdjacentHTML("beforebegin", "<form class='form-url hidden'><input type='url' required id='video-input' style='width:430px' placeholder='enter video url(s) separated by comma ,><button class='btn btn-sm btn-pink btn-add-url'>ADD</button></form>");
+        const form = document.querySelector('.form-url').addEventListener('submit', function(e)
+               {
+                    e.preventDefault();
+                });
+        const btn = document.querySelector('.btn-add-url');
+        btn.addEventListener('click', addVideo);
+    }
+    vids.forEach(vid =>
+    {
+        const src = vid.querySelector('video').firstElementChild.src;
+        if (vid.firstChild.tagName != 'A')
+        {
+            const anc = document.createElement('a');
+            anc.classList.add('video-url', 'hidden');
+            anc.textContent = 'COPY LINK';
+            vid.insertAdjacentElement("afterbegin", anc);
+            anc.onclick = async function()
+            {
+                await navigator.clipboard.writeText(src);
+            };
+        }
+    });
+
+    function addVideo()
+        {
+            const input = document.getElementById('video-input');
+
+            if (input.value == '' || input.value.length < 50 || input.value == null)
+            {
+                console.log("no valid input");
+                return;
+            }
+            else
+            {
+                let vidURLs = input.value.split(',');
+                vidURLs.forEach(url => createVid(url));
+            }
+        }
+
+    function createVid(sourceURL)
+        {
+            let posterURL1 = sourceURL.replace('v', 's');
+            let posterURL2 = posterURL1.replace('_720p', '');
+            let posterURL = posterURL2.replace('mp4', 'jpg');
+            const mediaDiv = document.createElement('div');
+            const videoDiv = document.createElement('div');
+            mediaDiv.classList.add('media-group');
+            videoDiv.classList.add('video');
+   
+            const mainMedia = document.querySelector('.media-group');
+            mainMedia.parentElement.appendChild(mediaDiv);
+            mediaDiv.appendChild(videoDiv);
+            const video = document.createElement('video');
+            video.classList.add('video-js', 'vjs-16-9');
+            video.controls = true;
+            video.poster = posterURL;
+       
+            const src = document.createElement('source');
+            src.setAttribute('src', sourceURL);
+            video.appendChild(src);
+            videoDiv.appendChild(video);
+            var player = videojs(video);
+            video.preload="none";
+            allowPToPause(video);
 
 
-                                    const links = document.querySelectorAll('.video-url');
-                                            links.forEach(anc =>
-                                                {
-                                                    anc.classList.toggle('hidden')
-                                                });
+            document.querySelector('.sidebyside-btn').click();
+            document.querySelector('.sidebyside-btn').click();
+        }
+
+
+    if (urlBtn.textContent == 'SHOW URLS')
+    {
+        const links = document.querySelectorAll('.video-url');
+        links.forEach(anc =>
+        {
+            anc.classList.add('hidden');
+        });
+    }
+    else
+    {
+        const links = document.querySelectorAll('.video-url');
+        links.forEach(anc =>
+        {
+            anc.classList.remove('hidden');
+        });
+    }
+    document.querySelector('.form-url').classList.toggle('hidden');
+                                                
 }
 
 
@@ -188,15 +303,47 @@ function replaceAdWithButtons()
 
 function allowPToPause(videoToAllow)
 {
-    videoToAllow.parentElement.onkeypress = function(event){
-        if(event.key == 'p')
+    videoToAllow.parentElement.onkeydown = function(event){
+        if(event.key == 'p' || event.key == ' ')
         {
             videoToAllow.parentElement.querySelector('.vjs-play-control').click();
+        }
+        else if (event.key == 'ArrowRight')
+        {
+            videoToAllow.currentTime+=10;
+        }
+        else if (event.key == 'ArrowLeft')
+        {
+            videoToAllow.currentTime-=10;
         }
         else if (event.key == 'r')
         {
             const rng = Math.random() * (videoToAllow.duration - 1);
             videoToAllow.currentTime = rng;
+        }
+        else if (event.key == 'm')
+        {
+            videoToAllow.parentElement.querySelector('.mirror-btn').click();
+        }
+        else if (event.key == 'f')
+        {
+            videoToAllow.parentElement.querySelector('.vjs-fullscreen-control').click();
+        }
+        else if (!isNaN(event.key) && event.key != ' ')
+        {
+            videoToAllow.currentTime = (videoToAllow.duration/10) * (event.key);
+        }
+        else if (event.key == 'z')
+        {
+            if (!videoToAllow.classList.contains('zoomed'))
+            {
+                videoToAllow.style.scale = 2;
+            }
+            else
+            {
+                videoToAllow.style.scale= 1;
+            }
+            videoToAllow.classList.toggle('zoomed');
         }
     };
 }
@@ -383,7 +530,7 @@ function cloneThis()
         videoDiv.classList.add('video');
 
         const currentMedia = this.parentElement.parentElement;
-        currentMedia.insertAdjacentElement("afterend", mediaDiv)
+        currentMedia.insertAdjacentElement("afterend", mediaDiv);
 
         mediaDiv.appendChild(videoDiv);
         const video = document.createElement('video');
@@ -397,7 +544,7 @@ function cloneThis()
         videoDiv.appendChild(video);
         var player = videojs(video);
         // var player = videojs(duplicateVid);
-        
+        allowPToPause(video);
         console.log("found videos");
     }
 }
@@ -409,5 +556,6 @@ function cleanOnLoad()
     showMessage();
     addProperID();
     addTransitionToID();
+    copySourceFromAlbum();
 }
 window.addEventListener('load', cleanOnLoad);
