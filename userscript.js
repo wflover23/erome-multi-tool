@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Erome Video Cloner
 // @namespace    http://tampermonkey.net/
-// @version      0.9.420
+// @version      0.9.424
 // @description  clone videos in an erome album, play multiple & side-by-side!
 // @author       throwinglove23
 // @license      MIT
@@ -97,8 +97,8 @@ function urlShow()
     const vids = document.querySelectorAll('.video');
     if (document.querySelector('.form-url') == null)
     {
-        const area = document.querySelector('.clearfix');
-        area.insertAdjacentHTML("beforebegin", "<form class='form-url hidden'><input type='url' required id='video-input' style='width:430px' placeholder='enter video url(s) separated by comma ,'><button class='btn btn-sm btn-pink btn-add-url'>ADD</button></form>");
+        const area = document.querySelector('.clearfix').previousElementSibling.parentElement;
+        area.insertAdjacentHTML("afterbegin", "<form class='form-url hidden'><input type='url' required id='video-input' style='width:430px' placeholder='enter video url(s) separated by comma ,'><button class='btn btn-sm btn-pink btn-add-url'>ADD</button></form>");
         const form = document.querySelector('.form-url').addEventListener('submit', function(e)
                {
                     e.preventDefault();
