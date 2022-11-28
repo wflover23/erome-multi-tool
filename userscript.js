@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Erome Video Cloner
 // @namespace    http://tampermonkey.net/
-// @version      0.9.424
+// @version      0.9.670
 // @description  clone videos in an erome album, play multiple & side-by-side!
 // @author       throwinglove23
 // @license      MIT
@@ -83,7 +83,84 @@ function copySourceFromAlbum()
             }
             album.insertAdjacentHTML("afterbegin", '<button class="copy-link-btn btn btn-sm btn-pink" style="margin-left: 2px;width: fit-content;position: relative;z-index: 30;bottom: 61px;font-size: 1.5rem;padding: 0;">COPY</button>');
             album.querySelector('.copy-link-btn').onclick = copyFxn;
+            const btnCopy = album.querySelector('.copy-link-btn');
+            copyOnHover(btnCopy);
         });
+}
+
+function copyOnHover(btn)
+{
+        btn.style.opacity=0;
+      btn.closest('.album').addEventListener('mouseover', function()
+        {
+            btn.style.opacity=1;
+        });
+        btn.closest('.album').addEventListener('mouseout', function()
+        {
+            btn.style.opacity=0;
+        });
+}
+
+function checkForChapters()
+{
+    const legend = document.querySelector('#legend');
+    // if no text nodes/chapters found in legend, return ;
+    const nodeTypes = Array.from(legend.childNodes).filter(function(item)
+                                                       {
+                                                           return item.nodeType === 3 && item.textContent.trim() != '';
+                                                       })
+                                                       .map(item => item.textContent.trim());
+    const startingIndex = nodeTypes.indexOf('CHAPTERS BELOW');
+    if (startingIndex == -1)
+    {
+        return;
+    }
+    else
+    {
+        document.querySelector('#bubble').style.width = 'min-content';
+        document.querySelector('#bubble').insertAdjacentHTML("beforeend", '<button class="btn btn-sm btn-pink chapter-btn mb-5">ADD CHAPTERS</button>');
+        const chapterBtn = document.querySelector('.chapter-btn');
+        chapterBtn.addEventListener('click', function()
+        {
+            parseChapters(nodeTypes.slice(startingIndex+1));
+            chapterBtn.textContent == 'REMOVE CHAPTERS' ? chapterBtn.textContent = 'ADD CHAPTERS' : chapterBtn.textContent = 'REMOVE CHAPTERS';
+        });
+    }
+}
+
+function parseChapters(chapterInfo)
+{
+    document.querySelector('.vjs-chapters-button.vjs-control').classList.toggle('vjs-hidden');
+    let listTimes = [];
+    let listNames = [];
+    // https://stackoverflow.com/questions/9640266/convert-hhmmss-string-to-seconds-only-in-javascript
+    function timeToSeconds(str)
+    {
+        var timeElements = str.split(':'),
+            seconds = 0, minutes = 1;
+    
+        while (timeElements.length > 0)
+        {
+            seconds += minutes * parseInt(timeElements.pop(), 10);
+            minutes *= 60;
+        }
+    
+        return seconds;
+    }
+    for (let i = 0; i<chapterInfo.length;i++)
+        {
+            listTimes.push(timeToSeconds(chapterInfo[i].split('-')[0]));
+            listNames.push(chapterInfo[i].split('-')[1]);
+        }
+    const chapterBar = document.querySelector('.vjs-chapters-button .vjs-menu-content');
+    if (chapterBar.children.length > 1)
+    {
+        chapterBar.innerHTML = '<li class="vjs-menu-title" tabindex="-1">Chapters</li>';
+    }
+    for (let i = 0; i< listTimes.length;i++)
+        {
+            chapterBar.insertAdjacentHTML("beforeend", `<li class="vjs-menu-item" onclick='function moveTo(){document.querySelector("video").currentTime=${listTimes[i]}} moveTo();' tabindex="-1">${listNames[i]}</li>`);
+        }
 }
 
 function urlShow()
@@ -200,6 +277,10 @@ function addTransitionToID()
             const parsedInt = parseInt(idText.substring(1), 10);
             const textInLink = link.nextSibling;
             const idEl = document.getElementById(parsedInt);
+            if (Number.isNaN(parsedInt))
+            {
+                return;
+            }
             if (textInLink.nodeType == 3)
             {
                 idEl.title=textInLink.textContent.trim();
@@ -293,8 +374,8 @@ function replaceAdWithButtons()
     sbsBtn.textContent = 'SBS: OFF';
     const clonerBtn = document.createElement('button');
     clonerBtn.textContent = 'CLONER: OFF';
-    sbsBtn.classList.add('btn', 'btn-sm', 'btn-pink', 'sidebyside-btn', 'mr-5');
-    clonerBtn.classList.add('btn', 'btn-sm', 'btn-pink', 'cloner');
+    sbsBtn.classList.add('btn', 'btn-sm', 'btn-pink', 'sidebyside-btn', 'mr-5', 'mb-5');
+    clonerBtn.classList.add('btn', 'btn-sm', 'btn-pink', 'cloner', 'mb-5');
     sbsBtn.addEventListener('click', sideBySide);
     clonerBtn.addEventListener('click', cloneFunction);
     
@@ -323,7 +404,21 @@ function allowPToPause(videoToAllow)
         }
         else if (event.key == 'm')
         {
-            videoToAllow.parentElement.querySelector('.mirror-btn').click();
+            if (videoToAllow.parentElement.querySelector('.mirror-btn')!= null)
+            {
+               videoToAllow.parentElement.querySelector('.mirror-btn').click();
+               return;
+            }
+            if (videoToAllow.classList.contains('flipped'))
+            {
+                videoToAllow.style.transform = '';
+                videoToAllow.classList.remove('flipped');
+            }
+            else
+            {
+                videoToAllow.style.transform = 'rotateY(173deg)';
+                videoToAllow.classList.add('flipped');
+            }
         }
         else if (event.key == 'f')
         {
@@ -337,7 +432,7 @@ function allowPToPause(videoToAllow)
         {
             if (!videoToAllow.classList.contains('zoomed'))
             {
-                videoToAllow.style.scale = 2;
+                videoToAllow.style.scale = 1.6;
             }
             else
             {
@@ -447,6 +542,10 @@ function sideBySide()
 
 function showMessage()
 {
+    if (document.querySelector('.video') == null)
+    {
+        return;
+    }
     const messageDiv = document.querySelector('#user_message');
     messageDiv.textContent = 'videos replaced + multi-play ON';
     messageDiv.style.display='block';
@@ -557,5 +656,6 @@ function cleanOnLoad()
     addProperID();
     addTransitionToID();
     copySourceFromAlbum();
+    checkForChapters();
 }
 window.addEventListener('load', cleanOnLoad);
