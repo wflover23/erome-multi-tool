@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Erome Video Cloner
 // @namespace    http://tampermonkey.net/
-// @version      0.9.670
+// @version      0.9.704
 // @description  clone videos in an erome album, play multiple & side-by-side!
 // @author       throwinglove23
 // @license      MIT
@@ -28,10 +28,10 @@ function mainFunction() {
 });
     const userRow = document.querySelector('.username');
     const cleanseBtn = document.createElement('button');
-    if (userRow == null || document.querySelector('video') == null)
-    {
-        return;
-    }
+    // if (userRow == null || document.querySelector('video') == null)
+    // {
+    //     return;
+    // }
     cleanseBtn.classList.add('btn', 'btn-grey', 'btn-sm', 'url-btn');
     cleanseBtn.textContent = 'SHOW URLS';
     userRow.appendChild(cleanseBtn);
@@ -103,8 +103,16 @@ function copyOnHover(btn)
 
 function checkForChapters()
 {
+    if (document.querySelector('video') == null)
+    {
+        return;
+    }
     const legend = document.querySelector('#legend');
     // if no text nodes/chapters found in legend, return ;
+    if (!legend || legend.children.length < 2)
+    {
+        return;
+    }
     const nodeTypes = Array.from(legend.childNodes).filter(function(item)
                                                        {
                                                            return item.nodeType === 3 && item.textContent.trim() != '';
@@ -402,7 +410,7 @@ function allowPToPause(videoToAllow)
             const rng = Math.random() * (videoToAllow.duration - 1);
             videoToAllow.currentTime = rng;
         }
-        else if (event.key == 'm')
+        else if (event.key == 'x')
         {
             if (videoToAllow.parentElement.querySelector('.mirror-btn')!= null)
             {
@@ -439,6 +447,18 @@ function allowPToPause(videoToAllow)
                 videoToAllow.style.scale= 1;
             }
             videoToAllow.classList.toggle('zoomed');
+        }
+        else if (event.key == 't')
+        {
+            if (!document.querySelector('.sea-css'))
+            {
+                const css = document.createElement('link');
+                css.href='https://unpkg.com/@videojs/themes@1/dist/sea/index.css';
+                css.classList.add('sea-css');
+                css.rel='stylesheet';
+                document.head.appendChild(css);
+            }
+            videoToAllow.parentElement.classList.toggle('vjs-theme-sea');
         }
     };
 }
@@ -648,6 +668,22 @@ function cloneThis()
     }
 }
 
+function showHideMenuE()
+{
+    document.addEventListener('keypress', function(event)
+    {
+       if (event.key == 'e')
+       {
+           document.querySelector('#bubble').classList.toggle('hidden');
+       }
+       else if (event.key == 's' && event.target != document.querySelector('#q') && event.target != document.querySelector('#content'))
+       {
+           sideBySide();
+       }
+    });
+    
+}
+
 function cleanOnLoad()
 {
     mainFunction();
@@ -657,5 +693,6 @@ function cleanOnLoad()
     addTransitionToID();
     copySourceFromAlbum();
     checkForChapters();
+    showHideMenuE();
 }
 window.addEventListener('load', cleanOnLoad);
